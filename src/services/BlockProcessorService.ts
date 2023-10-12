@@ -84,7 +84,6 @@ export const processBlocks = async (fromBlock: number, toBlock: number, pool: Po
 }
 
 export const startBlockProcessor = async (pool: Pool) => {
-    console.log(`Processing blocks`)
     const lastBlockProcessedRes = await pool.query(`SELECT svalue FROM settings WHERE skey = 'last_block_processed'`)
     const lastBlockProcessed = lastBlockProcessedRes.rows.length ? Number(lastBlockProcessedRes.rows[0].svalue) : 0
     if (lastBlockProcessed === 0) {
@@ -92,8 +91,8 @@ export const startBlockProcessor = async (pool: Pool) => {
     }
     if (lastBlockProcessed) {
         const processTo = await getLastBlockNum()
-        console.log(`Processing blocks from ${lastBlockProcessed} to ${processTo}`)
         if (processTo > lastBlockProcessed) {
+            console.log(`Processing blocks from ${lastBlockProcessed} to ${processTo}`)
             await processBlocks(lastBlockProcessed, Number(processTo), pool)
             await pool.query(`UPDATE settings SET svalue = $1 WHERE skey = 'last_block_processed'`, [
                 processTo,
