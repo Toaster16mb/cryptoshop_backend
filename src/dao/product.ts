@@ -8,17 +8,24 @@ export const getProducts = async (pool: Pool) => {
 }
 
 export const getProduct = async (id: number, pool: Pool) => {
-    const result = await pool.query(`SELECT * FROM products WHERE id = '${id}'`)
+    const result = await pool.query(`SELECT * FROM products WHERE id = $1`, [
+        id
+    ])
     return result.rows[0] as Product
 }
 
 export const deleteProduct = async (id: number, pool: Pool) => {
-    const result = await pool.query(`DELETE FROM products WHERE id = '${id}'`)
+    const result = await pool.query(`DELETE FROM products WHERE id = $1`, [
+        id
+    ])
     return result.rows
 }
 
 export const addProduct = async (product: Product, pool: Pool) => {
-    const result = await pool.query(`INSERT INTO products (name, price) VALUES ('${product.name}', '${product.price}')`)
+    const result = await pool.query(`INSERT INTO products (name, price) VALUES ($1, $2)`, [
+        product.name,
+        product.price,
+    ])
     return result.rows
 }
 

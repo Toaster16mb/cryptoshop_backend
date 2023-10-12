@@ -37,7 +37,13 @@ export const processBlocks = async (fromBlock: number, toBlock: number, pool: Po
                         subject: `Order Success`,
                         text: `Order ${order.id} succeed`
                     }
-                    transporter.sendMail(mailOptions)
+                    transporter.sendMail(mailOptions, (err: any, result: any) => {
+                        if (err) {
+                            console.log(err)
+                        } else {
+                            console.log(result)
+                        }
+                    })
                 } catch (e) {
                     console.log(e)
                 }
@@ -55,15 +61,22 @@ export const processBlocks = async (fromBlock: number, toBlock: number, pool: Po
                     const transaction = await web3.eth.getTransactionFromBlock(block.number, i)
                     if (transaction) {
                         if (walletsList.includes(transaction.to)) {
-                            await pool.query(`UPDATE orders SET atblock = ${blockNum} WHERE wallet = '${transaction.to}'`)
+                            await pool.query(`UPDATE orders SET atblock = $1 WHERE wallet = $2`, [
+                                blockNum,
+                                transaction.to,
+                            ])
                         }
                     }
                 }
             }
-            await pool.query(`UPDATE settings SET svalue = '${i}' WHERE skey = 'last_block_processed'`)
+            await pool.query(`UPDATE settings SET svalue = $1 WHERE skey = 'last_block_processed'`, [
+                i,
+            ])
         }
     } else {
-        await pool.query(`UPDATE settings SET svalue = '${toBlock}' WHERE skey = 'last_block_processed'`)
+        await pool.query(`UPDATE settings SET svalue = $1 WHERE skey = 'last_block_processed'`, [
+            toBlock
+        ])
     }
     setTimeout(() => {
         startBlockProcessor(pool)
@@ -82,7 +95,9 @@ export const startBlockProcessor = async (pool: Pool) => {
         console.log(`Processing blocks from ${lastBlockProcessed} to ${processTo}`)
         if (processTo > lastBlockProcessed) {
             await processBlocks(lastBlockProcessed, Number(processTo), pool)
-            await pool.query(`UPDATE settings SET svalue = '${processTo}' WHERE skey = 'last_block_processed'`)
+            await pool.query(`UPDATE settings SET svalue = $1 WHERE skey = 'last_block_processed'`, [
+                processTo,
+            ])
         } else {
             setTimeout(() => {
                 startBlockProcessor(pool)
@@ -91,7 +106,9 @@ export const startBlockProcessor = async (pool: Pool) => {
     } else {
         const lastOrderRes = await pool.query(`SELECT * FROM orders WHERE status = 'pending' AND atblock != 0 ORDER BY id ASC LIMIT 1`)
         if (lastOrderRes.rows.length) {
-            await pool.query(`INSERT INTO settings(skey, svalue) VALUES ('last_block_processed', '${lastOrderRes.rows[0].atblock}')`)
+            await pool.query(`INSERT INTO settings(skey, svalue) VALUES ('last_block_processed', $1)`, [
+                lastOrderRes.rows[0].atblock,
+            ])
         }
         setTimeout(() => {
             startBlockProcessor(pool)
