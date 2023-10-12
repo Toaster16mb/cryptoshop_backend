@@ -121,7 +121,11 @@ app.get("/api/orders/check/:id", async (req: Request, res: Response, next: NextF
   try {
     const order = await getOrder(id, pool)
     if (order) {
-      const lastBlock = await getLastBlockNum()
+      let lastBlock = 0
+      const lbQ = await pool.query("SELECT svalue FROM settings WHERE skey = 'last_block_processed' LIMIT 1")
+      if (lbQ.rows.length) {
+        lastBlock = lbQ.rows[0].svalue
+      }
       const ethRecieved = await getBalance(order.wallet, order.atblock)
       res.json({
         orderStatus: order.status,
